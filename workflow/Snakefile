@@ -1,0 +1,19 @@
+import sys
+import peppy
+import glob
+
+configfile: "config/config.yaml"
+pepfile: "config/pep.yaml"
+
+SAMPLES = [x.sample_name for x in pep.samples if x.sample_name not in ["SRR13147937"]]
+
+EXPERIMENTS = list(set([pep.get_sample(x).Experiment for x in SAMPLES]))
+
+include: "rules/alevin-fry.smk"
+include: "rules/initial_scrna_steps.smk"
+
+rule all:
+    input:
+        expand("results/downstream/single_sample_clustering/{e}.usa.filt.dimred.clust.sce.rds", e=EXPERIMENTS),
+        "results/downstream/integrated_by_tissue_and_sex/all.sce.rds",
+        rules.sce_integrated_clustering.output

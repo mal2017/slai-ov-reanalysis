@@ -1,0 +1,2 @@
+COMBINED_TE_GENOME_FA: resources/plus-repeats.repeatmasked.fixednames.fasta
+TXOME_AND_TES_GTF: resources/plus-repeats.fixednames.gtf

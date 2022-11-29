@@ -1,0 +1,19 @@
+import sys
+import peppy
+import glob
+
+configfile: "config/config.yaml"
+pepfile: "config/pep.yaml"
+
+SAMPLES = [x.sample_name for x in pep.samples if x not =="SRR13147937"]
+
+#include: "rules/alevin-fry.smk"
+include: "rules/initial_scrna_steps.smk"
+
+
+rule all:
+    input:
+        #expand("results/alevin-fry/quant_res/{s}",s=SAMPLES),
+        expand("results/downstream/single_sample_clustering/{s}.usa.filt.dimred.clust.sce.rds",s=SAMPLES),
+        rules.sce_integrate.output,
+        rules.sce_integrated_clustering.output
