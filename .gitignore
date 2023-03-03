@@ -1,5 +1,6 @@
 .snakemake
 results/
-data/
+data/GSE162192_Seurat_objects.RData
 resources/
 221123_grant_23_slaidina-pan-te-signature_01.tar.gz
+.Rproj.user
