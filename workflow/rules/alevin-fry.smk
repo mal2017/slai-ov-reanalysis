@@ -22,6 +22,8 @@ rule make_splici:
         odir="results/transcriptome_splici_fl/",
     conda:
         "../envs/eisar.yaml"
+    priority:
+        101
     script:
         "../scripts/make_splici.R"
 
@@ -38,6 +40,8 @@ rule make_splici_idx:
         cpus=24
     singularity:
         "docker://quay.io/biocontainers/salmon:1.5.2--h84f40af_0"
+    priority:
+        101
     shell:
         """
         salmon index -t {input.fasta} \
@@ -74,6 +78,8 @@ rule merge_by_experiment:
     params:
         r1 = lambda wc: expand("results/fastqs/{s}/{s}_1.fastq",s=[x for x in SAMPLES if pep.get_sample(x).Experiment == wc.experiment]),
         r2 = lambda wc: expand("results/fastqs/{s}/{s}_2.fastq",s=[x for x in SAMPLES if pep.get_sample(x).Experiment == wc.experiment])
+    priority:
+        99
     shell:
         """
         cat {params.r1} > {output.r1}
@@ -131,7 +137,7 @@ rule alevin_fry_permit:
         mem=4000,
         cpus=1
     priority:
-        3
+        100
     shell:
         """
         alevin-fry generate-permit-list -d fw -k -i {input.map} -o {output.dir}
@@ -152,7 +158,7 @@ rule alevin_fry_collate:
         mem=4000,
         cpus=12
     priority:
-        2
+        100
     shell:
         """
         alevin-fry collate -t {threads} -i {input.pml} -r {input.map}
@@ -174,7 +180,7 @@ rule alevin_fry_quant:
         mem=4000,
         cpus=12
     priority:
-        2
+        100
     shell:
         """
         alevin-fry quant -t {threads} \
