@@ -33,15 +33,64 @@ sces <- sce_fls %>% map(read_rds)
 
 # currently, correction is
 corrected <- quickCorrect(sces,
-                          precomputed = decs,
+                          precomputed = decs,correct.all = T,
                           hvg.args = list(var.field="ratio",n=1000), # for use with cv2
                           PARAM=FastMnnParam(BSPARAM=BiocSingular::RandomParam()))
 
 sce <- corrected$corrected
 
+# make room
+rm(corrected); rm(decs); gc()
+
 sce$barcode <- colnames(sce)
 
 colnames(sce) <- make.unique(colnames(sce))
+
+# put old assay values back in ----------
+add_uncorrected_expression <- function(assay = "logcounts", corrected=sce, raw_list=sces) {
+  # get tbl of barcords/batches; will use for ensuring pairing of correct expression values by batch and barcode
+  lkup <- colData(corrected) %>%
+    as_tibble()
+  
+  # gets expression data from each rep
+  all_logcounts <- map_df(raw_list, function(x) {x %>%
+      assay(assay) %>%
+      as_tibble(rownames = "gene_ID") %>%
+      pivot_longer(-gene_ID, names_to = "barcode", values_to = "X") %>%
+      filter(gene_ID %in% rownames(corrected))
+  }, .id = "batch")
+  
+  # reshape into mat
+  all_logcounts <- all_logcounts %>% pivot_wider(names_from = gene_ID, values_from = "X")
+  
+  # filter and reorder to match crrected
+  all_logcounts <- left_join(lkup,all_logcounts)
+  
+  # sanity
+  stopifnot(all(corrected$barcode == all_logcounts$barcode))
+  stopifnot(all(corrected$batch == all_logcounts$batch))
+  
+  # corrected already has unique identifiers
+  all_logcounts <- all_logcounts %>% mutate(identifier = colnames(corrected))
+  
+  # make a mat with identical features as the corrected mat
+  mat <- dplyr::select(all_logcounts, -batch,-barcode) %>%
+    column_to_rownames("identifier") %>%
+    as.matrix() %>%
+    .[,rownames(corrected)]
+  
+  # confirm they have identical rows and columns
+  stopifnot(all(colnames(mat) == rownames(corrected)))
+  stopifnot(all(colnames(corrected) == rownames(mat)))
+  
+  # add back in to the appropriate slot
+  assay(corrected,assay) <- t(mat)  
+  return(corrected)
+}
+
+# we don't really use the unspliced counts for anything yet, so won't add that back
+sce <- add_uncorrected_expression(assay="logcounts")
+sce <- add_uncorrected_expression(assay="counts")
 
 # ------------------- get cell info
 
