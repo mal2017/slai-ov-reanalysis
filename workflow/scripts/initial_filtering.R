@@ -50,11 +50,7 @@ print(sce)
 # --------------------
 # doublet removal
 # --------------------
-
-# get size factors by deconv method - see http://bioconductor.org/books/3.14/OSCA.basic/normalization.html#normalization-transformation
 set.seed(2)
-clust.sce <- scran::quickCluster(sce)
-sce <- computeSumFactors(sce, cluster=clust.sce, min.mean=0.1)
 
 # get logcounts
 sce <- logNormCounts(sce,assay.type=1)
@@ -76,6 +72,20 @@ g_doublet <- dat_doublet %>%
 
 # perform filt
 sce <- sce[,scdbf$scDblFinder.class == "singlet"]
+
+
+# ---------------------------------------
+# need to recompute size factors - as library size is required for scDblFinder (see link)
+# https://bioconductor.org/packages/release/bioc/vignettes/scDblFinder/inst/doc/findDoubletClusters.html#normalization-by-library-size
+# but deconv method probably better for things like DE and other downstream aanalysis
+# see http://bioconductor.org/books/3.14/OSCA.basic/normalization.html#normalization-transformation
+# however unclear how much this matters in practice, they seem pretty tigthly correlated: 
+# http://bioconductor.org/books/3.14/OSCA.basic/normalization.html#normalization-by-deconvolution
+sizeFactors(sce) <- NULL
+logcounts(sce) <- NULL
+clust.sce <- scran::quickCluster(sce)
+sce <- computeSumFactors(sce, cluster=clust.sce, min.mean=0.1)
+sce <- logNormCounts(sce,assay.type=1)
 
 print(sce)
 
